@@ -1,15 +1,22 @@
+const isNonEmptyString = (value) =>
+  typeof value === "string" && value.trim() !== "";
+
 const validateCreateBook = (book) => {
   const errors = [];
 
-  if (!book.title || book.title.trim() === "") {
+  if (!book || typeof book !== "object" || Array.isArray(book)) {
+    return ["Book must be a JSON object"];
+  }
+
+  if (!isNonEmptyString(book.title)) {
     errors.push("Title is required");
   }
 
-  if (!book.author || book.author.trim() === "") {
+  if (!isNonEmptyString(book.author)) {
     errors.push("Author is required");
   }
 
-  if (!book.category || book.category.trim() === "") {
+  if (!isNonEmptyString(book.category)) {
     errors.push("Category is required");
   }
 
@@ -30,6 +37,23 @@ const validateCreateBook = (book) => {
 
 const validatePatchBook = (book) => {
   const errors = [];
+  const allowedFields = ["title", "author", "category", "price", "stock"];
+
+  if (!book || typeof book !== "object" || Array.isArray(book)) {
+    return ["Book must be a JSON object"];
+  }
+
+  const fields = Object.keys(book);
+
+  if (fields.length === 0) {
+    errors.push("Provide at least one field to update");
+  }
+
+  for (const field of fields) {
+    if (!allowedFields.includes(field)) {
+      errors.push(`Unknown field: ${field}`);
+    }
+  }
 
   if (
     book.price !== undefined &&
@@ -45,21 +69,15 @@ const validatePatchBook = (book) => {
     errors.push("Stock must be a non-negative integer");
   }
 
-  if (book.title !== undefined && (!book.title || book.title.trim() === "")) {
+  if (book.title !== undefined && !isNonEmptyString(book.title)) {
     errors.push("Title cannot be empty");
   }
 
-  if (
-    book.author !== undefined &&
-    (!book.author || book.author.trim() === "")
-  ) {
+  if (book.author !== undefined && !isNonEmptyString(book.author)) {
     errors.push("Author cannot be empty");
   }
 
-  if (
-    book.category !== undefined &&
-    (!book.category || book.category.trim() === "")
-  ) {
+  if (book.category !== undefined && !isNonEmptyString(book.category)) {
     errors.push("Category cannot be empty");
   }
 
@@ -97,8 +115,12 @@ const validateBookQuery = ({ page, limit, category, search, sort }) => {
     errors.push("search must be a string");
   }
 
-  if (sort !== undefined && typeof sort !== "string") {
-    errors.push("sort must be a string");
+  if (
+    sort !== undefined &&
+    sort !== "price_asc" &&
+    sort !== "price_desc"
+  ) {
+    errors.push("sort must be price_asc or price_desc");
   }
 
   return errors;

@@ -1,61 +1,52 @@
-import pool from "../db/db.js";
+import prisma from "../config/prisma.js";
 
 const findBooks = async ({ category, search, sort, page, limit }) => {
-  let query = "SELECT * FROM books";
-
-  const values = [];
-  const conditions = [];
+  const where = {};
 
   if (category) {
-    conditions.push(`category = $${values.length + 1}`);
-
-    values.push(category);
+    where.category = category;
   }
 
   if (search) {
-    conditions.push(`title ILIKE $${values.length + 1}`);
-
-    values.push(`%${search}%`);
+    where.title = {
+      contains: search,
+      mode: "insensitive",
+    };
   }
 
-  if (conditions.length > 0) {
-    query += " WHERE " + conditions.join(" AND ");
-  }
-
-  const countQuery = `
-        SELECT COUNT(*)
-        FROM books
-        ${conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : ""}
-    `;
-
-  const countValues = [...values];
-
-  const countResult = await pool.query(countQuery, countValues);
-
-  const total = Number(countResult.rows[0].count);
-
-  const totalPages = Math.ceil(total / limit);
+  let orderBy;
 
   if (sort === "price_asc") {
-    query += " ORDER BY price ASC";
+    orderBy = {
+      price: "asc",
+    };
   }
 
   if (sort === "price_desc") {
-    query += " ORDER BY price DESC";
+    orderBy = {
+      price: "desc",
+    };
   }
 
   const offset = (page - 1) * limit;
 
-  query += ` LIMIT $${values.length + 1}`;
-  values.push(limit);
+  const [books, total] = await Promise.all([
+    prisma.book.findMany({
+      where,
+      orderBy,
+      skip: offset,
+      take: limit,
+    }),
 
-  query += ` OFFSET $${values.length + 1}`;
-  values.push(offset);
+    prisma.book.count({
+      where,
+    }),
+  ]);
 
-  const result = await pool.query(query, values);
+  const totalPages = Math.ceil(total / limit);
 
   return {
-    data: result.rows,
+    data: books,
     pagination: {
       page,
       limit,
@@ -66,96 +57,93 @@ const findBooks = async ({ category, search, sort, page, limit }) => {
 };
 
 const createBook = async ({ title, author, category, price, stock }) => {
-  const query = `
-        INSERT INTO books
-            (title, author, category, price, stock)
-        VALUES
-            ($1, $2, $3, $4, $5)
-        RETURNING *
-    `;
-
-  const values = [title, author, category, price, stock];
-
-  const result = await pool.query(query, values);
-
-  return result.rows[0];
+  return prisma.book.create({
+    data: {
+      title,
+      author,
+      category,
+      price,
+      stock,
+    },
+  });
 };
 
 const findBookById = async (id) => {
-  const query = `
-        SELECT *
-        FROM books
-        WHERE id = $1
-    `;
-
-  const result = await pool.query(query, [id]);
-
-  return result.rows[0] || null;
+  return prisma.book.findUnique({
+    where: {
+      id: Number(id),
+    },
+  });
 };
 
 const updateBook = async (id, { title, author, category, price, stock }) => {
-  const query = `
-        UPDATE books
-        SET
-            title = $1,
-            author = $2,
-            category = $3,
-            price = $4,
-            stock = $5
-        WHERE id = $6
-        RETURNING *
-    `;
+  try {
+    return await prisma.book.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        title,
+        author,
+        category,
+        price,
+        stock,
+      },
+    });
+  } catch (error) {
+    if (error.code === "P2025") {
+      return null;
+    }
 
-  const values = [title, author, category, price, stock, id];
-
-  const result = await pool.query(query, values);
-
-  return result.rows[0] || null;
+    throw error;
+  }
 };
 
 const patchBook = async (id, bookData) => {
   const allowedFields = ["title", "author", "category", "price", "stock"];
 
-  const fields = [];
-  const values = [];
+  const data = {};
 
   for (const [key, value] of Object.entries(bookData)) {
-    if (!allowedFields.includes(key)) {
-      continue;
+    if (allowedFields.includes(key)) {
+      data[key] = value;
     }
-
-    fields.push(`${key} = $${values.length + 1}`);
-    values.push(value);
   }
 
-  if (fields.length === 0) {
+  if (Object.keys(data).length === 0) {
     return null;
   }
 
-  values.push(id);
+  try {
+    return await prisma.book.update({
+      where: {
+        id: Number(id),
+      },
+      data,
+    });
+  } catch (error) {
+    if (error.code === "P2025") {
+      return null;
+    }
 
-  const query = `
-        UPDATE books
-        SET ${fields.join(", ")}
-        WHERE id = $${values.length}
-        RETURNING *
-    `;
-
-  const result = await pool.query(query, values);
-
-  return result.rows[0] || null;
+    throw error;
+  }
 };
 
 const deleteBook = async (id) => {
-  const query = `
-        DELETE FROM books
-        WHERE id = $1
-        RETURNING *
-    `;
+  try {
+    return await prisma.book.delete({
+      where: {
+        id: Number(id),
+      },
+    });
+  } catch (error) {
+    if (error.code === "P2025") {
+      return null;
+    }
 
-  const result = await pool.query(query, [id]);
-
-  return result.rows[0] || null;
+    throw error;
+  }
 };
 
 export {
