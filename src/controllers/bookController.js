@@ -10,8 +10,9 @@ import {
 import {
   validateCreateBook,
   validatePatchBook,
-  validateBookQuery,
 } from "../validators/bookValidator.js";
+
+import { validateBookQuery } from "../validators/bookQueryValidator.js";
 
 import AppError from "../errors/AppError.js";
 
@@ -22,10 +23,28 @@ const getAllBooks = async (req, res) => {
     throw new AppError("Validation failed", 400, errors);
   }
 
+  const {
+    page,
+    limit,
+    search,
+    category,
+    author,
+    minPrice,
+    maxPrice,
+    inStock,
+    sort,
+  } = req.query;
+
   const query = {
-    ...req.query,
-    page: req.query.page ? Number(req.query.page) : 1,
-    limit: req.query.limit ? Number(req.query.limit) : 10,
+    page: page ? Number(page) : 1,
+    limit: limit ? Number(limit) : 10,
+    search,
+    category,
+    author,
+    minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
+    maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
+    inStock: inStock !== undefined ? inStock === "true" : undefined,
+    sort,
   };
 
   const books = await getBooksService(query);

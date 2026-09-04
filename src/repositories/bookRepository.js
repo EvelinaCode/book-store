@@ -1,6 +1,16 @@
 import prisma from "../config/prisma.js";
 
-const findBooks = async ({ category, search, sort, page, limit }) => {
+const findBooks = async ({
+  category,
+  search,
+  author,
+  minPrice,
+  maxPrice,
+  inStock,
+  sort,
+  page,
+  limit,
+}) => {
   const where = {};
 
   if (category) {
@@ -14,19 +24,45 @@ const findBooks = async ({ category, search, sort, page, limit }) => {
     };
   }
 
-  let orderBy;
-
-  if (sort === "price_asc") {
-    orderBy = {
-      price: "asc",
+  if (author) {
+    where.author = {
+      contains: author,
+      mode: "insensitive",
     };
   }
 
-  if (sort === "price_desc") {
-    orderBy = {
-      price: "desc",
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    where.price = {};
+
+    if (minPrice !== undefined) {
+      where.price.gte = minPrice;
+    }
+
+    if (maxPrice !== undefined) {
+      where.price.lte = maxPrice;
+    }
+  }
+
+  if (inStock === true) {
+    where.stock = {
+      gt: 0,
     };
   }
+
+  if (inStock === false) {
+    where.stock = {
+      equals: 0,
+    };
+  }
+
+  const sortOptions = {
+    price_asc: { price: "asc" },
+    price_desc: { price: "desc" },
+    title_asc: { title: "asc" },
+    title_desc: { title: "desc" },
+  };
+
+  const orderBy = sortOptions[sort] ?? { id: "asc" };
 
   const offset = (page - 1) * limit;
 
