@@ -1,4 +1,11 @@
-const allowedSorts = ["price_asc", "price_desc", "title_asc", "title_desc"];
+const allowedSorts = [
+  "price_asc",
+  "price_desc",
+  "title_asc",
+  "title_desc",
+  "createdAt_asc",
+  "createdAt_desc",
+];
 
 const isValidNonNegativeQueryNumber = (value) =>
   typeof value === "string" &&

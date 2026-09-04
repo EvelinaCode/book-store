@@ -8,10 +8,14 @@ datasource db {
 }
 
 model Book {
-  id       Int    @id @default(autoincrement())
-  title    String
-  author   String
-  category String
-  price    Float
-  stock    Int
+  id          Int      @id @default(autoincrement())
+  title       String
+  author      String
+  category    String
+  price       Float
+  stock       Int
+  description String?
+  isbn        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

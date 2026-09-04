@@ -6,9 +6,17 @@ test.describe("DELETE /api/books/:id", () => {
 
     expect(response.status()).toBe(204);
 
+    const responseBody = await response.body();
+
+    expect(responseBody.length).toBe(0);
+
     const getResponse = await request.get(`/api/books/${book.id}`);
 
     expect(getResponse.status()).toBe(404);
+
+    const body = await getResponse.json();
+
+    expect(body.error).toBe("Book not found");
   });
 
   test("returns 404 for non-existing book", async ({ request }) => {

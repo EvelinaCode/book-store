@@ -13,7 +13,6 @@ import {
 } from "../validators/bookValidator.js";
 
 import { validateBookQuery } from "../validators/bookQueryValidator.js";
-
 import AppError from "../errors/AppError.js";
 
 const getAllBooks = async (req, res) => {

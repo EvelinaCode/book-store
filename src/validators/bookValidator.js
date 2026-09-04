@@ -23,6 +23,14 @@ const validateCreateBook = (book) => {
     errors.push("Category is required");
   }
 
+  if (!isNonEmptyString(book.isbn)) {
+    errors.push("ISBN is required");
+  }
+
+  if (book.description !== undefined && !isNonEmptyString(book.description)) {
+    errors.push("Description cannot be empty");
+  }
+
   if (book.price === undefined || book.price === null) {
     errors.push("Price is required");
   } else if (!isNonNegativeNumber(book.price)) {
@@ -40,7 +48,16 @@ const validateCreateBook = (book) => {
 
 const validatePatchBook = (book) => {
   const errors = [];
-  const allowedFields = ["title", "author", "category", "price", "stock"];
+
+  const allowedFields = [
+    "title",
+    "author",
+    "category",
+    "price",
+    "stock",
+    "isbn",
+    "description",
+  ];
 
   if (!book || typeof book !== "object" || Array.isArray(book)) {
     return ["Book must be a JSON object"];
@@ -68,6 +85,14 @@ const validatePatchBook = (book) => {
 
   if (book.category !== undefined && !isNonEmptyString(book.category)) {
     errors.push("Category cannot be empty");
+  }
+
+  if (book.isbn !== undefined && !isNonEmptyString(book.isbn)) {
+    errors.push("ISBN cannot be empty");
+  }
+
+  if (book.description !== undefined && !isNonEmptyString(book.description)) {
+    errors.push("Description cannot be empty");
   }
 
   if (book.price !== undefined && !isNonNegativeNumber(book.price)) {

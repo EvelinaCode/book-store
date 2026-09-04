@@ -8,6 +8,12 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  if (err.code === "P2002") {
+    return res.status(409).json({
+      error: "A book with this ISBN already exists",
+    });
+  }
+
   res.status(500).json({
     error: "Internal server error",
   });

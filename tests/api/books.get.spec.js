@@ -21,6 +21,14 @@ test.describe("GET /api/books", () => {
 
     expect(responseBook.id).toBe(book.id);
     expect(responseBook.title).toBe(book.title);
+    expect(responseBook.author).toBe(book.author);
+    expect(responseBook.category).toBe(book.category);
+    expect(responseBook.price).toBe(book.price);
+    expect(responseBook.stock).toBe(book.stock);
+    expect(responseBook.isbn).toBe(book.isbn);
+    expect(responseBook.description).toBe(book.description);
+    expect(responseBook.createdAt).toBeTruthy();
+    expect(responseBook.updatedAt).toBeTruthy();
   });
 
   test("returns 404 for non-existing book", async ({ request }) => {
@@ -78,7 +86,7 @@ test.describe("GET /api/books", () => {
 
     const body = await response.json();
 
-    const prices = body.data.map((book) => book.price);
+    const prices = body.data.map((book) => Number(book.price));
 
     expect(prices).toEqual([...prices].sort((a, b) => a - b));
   });
@@ -91,7 +99,7 @@ test.describe("GET /api/books", () => {
     const body = await response.json();
 
     expect(body.details).toContain(
-      "sort must be one of: price_asc, price_desc, title_asc, title_desc",
+      "sort must be one of: price_asc, price_desc, title_asc, title_desc, createdAt_asc, createdAt_desc",
     );
   });
 
@@ -169,7 +177,7 @@ test.describe("GET /api/books", () => {
     expect(body.data).toHaveLength(2);
 
     for (const book of body.data) {
-      expect(book.price).toBeGreaterThanOrEqual(20);
+      expect(Number(book.price)).toBeGreaterThanOrEqual(20);
     }
   });
 
@@ -185,7 +193,7 @@ test.describe("GET /api/books", () => {
     expect(body.data).toHaveLength(2);
 
     for (const book of body.data) {
-      expect(book.price).toBeLessThanOrEqual(20);
+      expect(Number(book.price)).toBeLessThanOrEqual(20);
     }
   });
 
@@ -199,7 +207,7 @@ test.describe("GET /api/books", () => {
     const body = await response.json();
 
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].price).toBe(20);
+    expect(Number(body.data[0].price)).toBe(20);
   });
 
   test("filters books that are in stock", async ({ request, sortingBooks }) => {
@@ -283,10 +291,56 @@ test.describe("GET /api/books", () => {
 
     const body = await response.json();
 
-    const prices = body.data.map((book) => book.price);
+    const prices = body.data.map((book) => Number(book.price));
 
     expect(prices).toEqual(
       [...prices].sort((firstPrice, secondPrice) => secondPrice - firstPrice),
+    );
+  });
+
+  test("sorts books by createdAt ascending", async ({
+    request,
+    sortingBooks,
+  }) => {
+    const response = await request.get(
+      "/api/books?category=Sorting%20Test&sort=createdAt_asc",
+    );
+
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+
+    const createdAtValues = body.data.map((book) =>
+      new Date(book.createdAt).getTime(),
+    );
+
+    expect(createdAtValues).toEqual(
+      [...createdAtValues].sort(
+        (firstDate, secondDate) => firstDate - secondDate,
+      ),
+    );
+  });
+
+  test("sorts books by createdAt descending", async ({
+    request,
+    sortingBooks,
+  }) => {
+    const response = await request.get(
+      "/api/books?category=Sorting%20Test&sort=createdAt_desc",
+    );
+
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+
+    const createdAtValues = body.data.map((book) =>
+      new Date(book.createdAt).getTime(),
+    );
+
+    expect(createdAtValues).toEqual(
+      [...createdAtValues].sort(
+        (firstDate, secondDate) => secondDate - firstDate,
+      ),
     );
   });
 });

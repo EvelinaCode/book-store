@@ -28,6 +28,7 @@ export const test = base.extend({
         category: "Sorting Test",
         price: 10,
         stock: 1,
+        isbn: "978-0132350885",
       },
       {
         title: "Bravo Sorting Book",
@@ -35,6 +36,7 @@ export const test = base.extend({
         category: "Sorting Test",
         price: 20,
         stock: 1,
+        isbn: "978-0132350886",
       },
       {
         title: "Charlie Sorting Book",
@@ -42,6 +44,7 @@ export const test = base.extend({
         category: "Sorting Test",
         price: 30,
         stock: 0,
+        isbn: "978-0132350887",
       },
     ];
 
