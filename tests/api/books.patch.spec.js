@@ -124,7 +124,7 @@ test.describe("PATCH /api/books/:id", () => {
     const body = await response.json();
 
     expect(body.error).toBe("Validation failed");
-    expect(body.details).toContain("Unknown field: rating");
+    expect(body.details).toContain('Unrecognized key: "rating"');
   });
 
   test("returns 400 when ISBN is empty", async ({ request, book }) => {

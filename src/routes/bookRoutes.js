@@ -1,5 +1,11 @@
 import express from "express";
 import asyncHandler from "../middleware/asyncHandler.js";
+import {
+  createBookSchema,
+  patchBookSchema,
+} from "../validators/bookSchemas.js";
+import { bookQuerySchema } from "../validators/bookQuerySchema.js";
+import { validate } from "../middleware/validate.js";
 
 import {
   getAllBooks,
@@ -11,13 +17,13 @@ import {
 } from "../controllers/bookController.js";
 const router = express.Router();
 
-router.get("/", asyncHandler(getAllBooks));
+router.get("/", validate(bookQuerySchema, "query"), asyncHandler(getAllBooks));
 router.get("/:id", asyncHandler(getBookById));
 
-router.post("/", asyncHandler(createBook));
+router.post("/", validate(createBookSchema), asyncHandler(createBook));
 
-router.put("/:id", asyncHandler(updateBook));
-router.patch("/:id", asyncHandler(patchBook));
+router.put("/:id", validate(createBookSchema), asyncHandler(updateBook));
+router.patch("/:id", validate(patchBookSchema), asyncHandler(patchBook));
 router.delete("/:id", asyncHandler(deleteBook));
 
 export default router;

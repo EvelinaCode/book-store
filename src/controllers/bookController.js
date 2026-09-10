@@ -7,24 +7,12 @@ import {
   deleteBook as deleteBookService,
 } from "../services/bookService.js";
 
-import {
-  validateCreateBook,
-  validatePatchBook,
-} from "../validators/bookValidator.js";
-
-import { validateBookQuery } from "../validators/bookQueryValidator.js";
 import AppError from "../errors/AppError.js";
 
 const getAllBooks = async (req, res) => {
-  const errors = validateBookQuery(req.query);
-
-  if (errors.length > 0) {
-    throw new AppError("Validation failed", 400, errors);
-  }
-
   const {
-    page,
-    limit,
+    page = 1,
+    limit = 10,
     search,
     category,
     author,
@@ -32,16 +20,16 @@ const getAllBooks = async (req, res) => {
     maxPrice,
     inStock,
     sort,
-  } = req.query;
+  } = res.locals.validatedQuery;
 
   const query = {
-    page: page ? Number(page) : 1,
-    limit: limit ? Number(limit) : 10,
+    page,
+    limit,
     search,
     category,
     author,
-    minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
-    maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
+    minPrice,
+    maxPrice,
     inStock: inStock !== undefined ? inStock === "true" : undefined,
     sort,
   };
@@ -68,12 +56,6 @@ const getBookById = async (req, res) => {
 };
 
 const createBook = async (req, res) => {
-  const errors = validateCreateBook(req.body);
-
-  if (errors.length > 0) {
-    throw new AppError("Validation failed", 400, errors);
-  }
-
   const newBook = await createBookService(req.body);
 
   res.status(201).json(newBook);
@@ -84,12 +66,6 @@ const updateBook = async (req, res) => {
 
   if (!Number.isInteger(id) || id <= 0) {
     throw new AppError("Invalid book ID", 400);
-  }
-
-  const errors = validateCreateBook(req.body);
-
-  if (errors.length > 0) {
-    throw new AppError("Validation failed", 400, errors);
   }
 
   const updatedBook = await updateBookService(id, req.body);
@@ -108,10 +84,10 @@ const patchBook = async (req, res) => {
     throw new AppError("Invalid book ID", 400);
   }
 
-  const errors = validatePatchBook(req.body);
-
-  if (errors.length > 0) {
-    throw new AppError("Validation failed", 400, errors);
+  if (Object.keys(req.body).length === 0) {
+    throw new AppError("Validation failed", 400, [
+      "Provide at least one field to update",
+    ]);
   }
 
   const updatedBook = await patchBookService(id, req.body);
