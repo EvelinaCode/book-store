@@ -26,6 +26,20 @@ export const test = base.extend({
       });
     }
   },
+
+  cleanupUser: async ({}, use) => {
+    const emailsToClean = [];
+
+    await use(async (email) => {
+      emailsToClean.push(email);
+    });
+
+    await prisma.user.deleteMany({
+      where: {
+        email: { in: emailsToClean },
+      },
+    });
+  },
 });
 
 export { expect } from "@playwright/test";
