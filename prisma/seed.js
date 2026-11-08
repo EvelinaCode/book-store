@@ -1,3 +1,5 @@
+import "dotenv/config";
+import bcrypt from "bcrypt";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -95,19 +97,58 @@ const books = [
   },
 ];
 
-async function main() {
-  const count = await prisma.book.count();
+async function seedAdmin() {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
 
-  if (count > 0) {
-    console.log("Books already exist. Skipping seed.");
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      "ADMIN_EMAIL and ADMIN_PASSWORD must be defined in environment variables",
+    );
+  }
+
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
+
+  if (existingAdmin) {
+    if (existingAdmin.role !== "ADMIN") {
+      throw new Error("The configured ADMIN_EMAIL belongs to a non-admin user");
+    }
+
+    console.log("Admin already exists. Skipping admin seed.");
     return;
   }
 
-  await prisma.book.createMany({
-    data: books,
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+  await prisma.user.create({
+    data: {
+      name: "Admin",
+      email: adminEmail,
+      password: hashedPassword,
+      role: "ADMIN",
+      isActive: true,
+    },
   });
 
-  console.log("10 books created successfully.");
+  console.log("Admin user created successfully.");
+}
+
+async function main() {
+  const count = await prisma.book.count();
+
+  if (count === 0) {
+    await prisma.book.createMany({
+      data: books,
+    });
+
+    console.log("10 books created successfully.");
+  } else {
+    console.log("Books already exist. Skipping books seed.");
+  }
+
+  await seedAdmin();
 }
 
 main()

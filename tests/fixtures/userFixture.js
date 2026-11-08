@@ -2,6 +2,10 @@ import { test as base } from "@playwright/test";
 import prisma from "../../src/config/prisma.js";
 
 export const test = base.extend({
+  db: async ({}, use) => {
+    await use(prisma);
+  },
+
   testUser: async ({ request }, use) => {
     const email = `test-user-${Date.now()}@example.com`;
     const password = "CorrectPassword123";

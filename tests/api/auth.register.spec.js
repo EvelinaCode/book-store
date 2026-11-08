@@ -96,3 +96,61 @@ test.describe("POST /api/auth/register", () => {
     expect(JSON.stringify(body)).toContain("Invalid email");
   });
 });
+
+test("creates a user with default role and active status", async ({
+  request,
+  db,
+  cleanupUser,
+}) => {
+  const email = `default-user-${Date.now()}@example.com`;
+
+  const response = await request.post("/api/auth/register", {
+    data: {
+      name: "Default User",
+      email,
+      password: validRegistrationData.password,
+    },
+  });
+
+  await cleanupUser(email);
+
+  expect(response.status()).toBe(201);
+
+  const user = await db.user.findUnique({
+    where: { email },
+  });
+
+  expect(user).not.toBeNull();
+  expect(user.role).toBe("USER");
+  expect(user.isActive).toBe(true);
+});
+
+test("does not allow public registration with ADMIN role", async ({
+  request,
+  db,
+  cleanupUser,
+}) => {
+  const email = `admin-attempt-${Date.now()}@example.com`;
+
+  const response = await request.post("/api/auth/register", {
+    data: {
+      name: "Admin Attempt",
+      email,
+      password: validRegistrationData.password,
+      role: "ADMIN",
+      isActive: false,
+    },
+  });
+
+  await cleanupUser(email);
+
+  expect(response.status()).toBe(201);
+
+  const user = await db.user.findUnique({
+    where: { email },
+  });
+
+  expect(user).not.toBeNull();
+  expect(user.role).toBe("USER");
+  expect(user.isActive).toBe(true);
+});
