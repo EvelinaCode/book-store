@@ -1,10 +1,13 @@
-import { test as base } from "@playwright/test";
+import { test as base, expect } from "./adminFixture.js";
 import { validBook } from "../data/bookData.js";
 
 export const test = base.extend({
-  book: async ({ request }, use) => {
+  book: async ({ request, admin }, use) => {
     const response = await request.post("/api/books", {
       data: validBook,
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+      },
     });
 
     if (response.status() !== 201) {
@@ -16,11 +19,15 @@ export const test = base.extend({
     try {
       await use(book);
     } finally {
-      await request.delete(`/api/books/${book.id}`);
+      await request.delete(`/api/books/${book.id}`, {
+        headers: {
+          Authorization: `Bearer ${admin.token}`,
+        },
+      });
     }
   },
 
-  sortingBooks: async ({ request }, use) => {
+  sortingBooks: async ({ request, admin }, use) => {
     const booksToCreate = [
       {
         title: "Alpha Sorting Book",
@@ -54,6 +61,9 @@ export const test = base.extend({
       for (const bookData of booksToCreate) {
         const response = await request.post("/api/books", {
           data: bookData,
+          headers: {
+            Authorization: `Bearer ${admin.token}`,
+          },
         });
 
         if (response.status() !== 201) {
@@ -66,10 +76,16 @@ export const test = base.extend({
       await use(createdBooks);
     } finally {
       await Promise.all(
-        createdBooks.map((book) => request.delete(`/api/books/${book.id}`)),
+        createdBooks.map((book) =>
+          request.delete(`/api/books/${book.id}`, {
+            headers: {
+              Authorization: `Bearer ${admin.token}`,
+            },
+          }),
+        ),
       );
     }
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect };

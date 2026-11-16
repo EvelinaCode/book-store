@@ -2,12 +2,17 @@ import { test, expect } from "../fixtures/bookFixture.js";
 import { validBook } from "../data/bookData.js";
 
 test.describe("POST /api/books", () => {
-  test("creates a new book", async ({ request }) => {
+  test("creates a new book", async ({ request, admin }) => {
     let bookId;
+
+    const headers = {
+      Authorization: `Bearer ${admin.token}`,
+    };
 
     try {
       const response = await request.post("/api/books", {
         data: validBook,
+        headers,
       });
 
       expect(response.status()).toBe(201);
@@ -29,16 +34,17 @@ test.describe("POST /api/books", () => {
       expect(book.updatedAt).toBeTruthy();
     } finally {
       if (bookId) {
-        await request.delete(`/api/books/${bookId}`);
+        await request.delete(`/api/books/${bookId}`, { headers });
       }
     }
   });
 
-  test("returns 400 when title is missing", async ({ request }) => {
+  test("returns 400 when title is missing", async ({ request, admin }) => {
     const { title, ...bookWithoutTitle } = validBook;
 
     const response = await request.post("/api/books", {
       data: bookWithoutTitle,
+      headers: { Authorization: `Bearer ${admin.token}` },
     });
 
     expect(response.status()).toBe(400);
@@ -49,12 +55,13 @@ test.describe("POST /api/books", () => {
     expect(body.details).toContain("Title is required");
   });
 
-  test("returns 400 when title is not a string", async ({ request }) => {
+  test("returns 400 when title is not a string", async ({ request, admin }) => {
     const response = await request.post("/api/books", {
       data: {
         ...validBook,
         title: 123,
       },
+      headers: { Authorization: `Bearer ${admin.token}` },
     });
 
     expect(response.status()).toBe(400);
@@ -65,11 +72,12 @@ test.describe("POST /api/books", () => {
     expect(body.details).toContain("Title is required");
   });
 
-  test("returns 400 when ISBN is missing", async ({ request }) => {
+  test("returns 400 when ISBN is missing", async ({ request, admin }) => {
     const { isbn, ...bookWithoutIsbn } = validBook;
 
     const response = await request.post("/api/books", {
       data: bookWithoutIsbn,
+      headers: { Authorization: `Bearer ${admin.token}` },
     });
 
     expect(response.status()).toBe(400);
@@ -80,12 +88,13 @@ test.describe("POST /api/books", () => {
     expect(body.details).toContain("ISBN is required");
   });
 
-  test("returns 400 when ISBN is not a string", async ({ request }) => {
+  test("returns 400 when ISBN is not a string", async ({ request, admin }) => {
     const response = await request.post("/api/books", {
       data: {
         ...validBook,
         isbn: 123456,
       },
+      headers: { Authorization: `Bearer ${admin.token}` },
     });
 
     expect(response.status()).toBe(400);
@@ -96,12 +105,13 @@ test.describe("POST /api/books", () => {
     expect(body.details).toContain("ISBN is required");
   });
 
-  test("returns 400 when price is negative", async ({ request }) => {
+  test("returns 400 when price is negative", async ({ request, admin }) => {
     const response = await request.post("/api/books", {
       data: {
         ...validBook,
         price: -10,
       },
+      headers: { Authorization: `Bearer ${admin.token}` },
     });
 
     expect(response.status()).toBe(400);
@@ -112,12 +122,13 @@ test.describe("POST /api/books", () => {
     expect(body.details).toContain("Price must be a non-negative number");
   });
 
-  test("returns 400 when stock is negative", async ({ request }) => {
+  test("returns 400 when stock is negative", async ({ request, admin }) => {
     const response = await request.post("/api/books", {
       data: {
         ...validBook,
         stock: -1,
       },
+      headers: { Authorization: `Bearer ${admin.token}` },
     });
 
     expect(response.status()).toBe(400);
@@ -128,12 +139,17 @@ test.describe("POST /api/books", () => {
     expect(body.details).toContain("Stock must be a non-negative integer");
   });
 
-  test("returns 409 when ISBN already exists", async ({ request }) => {
+  test("returns 409 when ISBN already exists", async ({ request, admin }) => {
     let bookId;
+
+    const headers = {
+      Authorization: `Bearer ${admin.token}`,
+    };
 
     try {
       const firstResponse = await request.post("/api/books", {
         data: validBook,
+        headers,
       });
 
       expect(firstResponse.status()).toBe(201);
@@ -147,6 +163,7 @@ test.describe("POST /api/books", () => {
           ...validBook,
           title: "Another Book",
         },
+        headers,
       });
 
       expect(secondResponse.status()).toBe(409);
@@ -156,7 +173,7 @@ test.describe("POST /api/books", () => {
       expect(body.error).toBe("A book with this ISBN already exists");
     } finally {
       if (bookId) {
-        await request.delete(`/api/books/${bookId}`);
+        await request.delete(`/api/books/${bookId}`, { headers });
       }
     }
   });

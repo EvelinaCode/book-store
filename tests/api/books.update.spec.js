@@ -2,7 +2,11 @@ import { test, expect } from "../fixtures/bookFixture.js";
 import { validBook } from "../data/bookData.js";
 
 test.describe("PUT /api/books/:id", () => {
-  test("updates an existing book", async ({ request, book }) => {
+  test("updates an existing book", async ({ request, book, admin }) => {
+    const headers = {
+      Authorization: `Bearer ${admin.token}`,
+    };
+
     const updatedBook = {
       ...validBook,
       title: "Updated Test Book",
@@ -16,6 +20,7 @@ test.describe("PUT /api/books/:id", () => {
 
     const response = await request.put(`/api/books/${book.id}`, {
       data: updatedBook,
+      headers,
     });
 
     expect(response.status()).toBe(200);
@@ -35,9 +40,12 @@ test.describe("PUT /api/books/:id", () => {
     expect(updatedBookResponse.updatedAt).toBeTruthy();
   });
 
-  test("returns 404 for non-existing book", async ({ request }) => {
+  test("returns 404 for non-existing book", async ({ request, admin }) => {
     const response = await request.put("/api/books/999999", {
       data: validBook,
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+      },
     });
 
     expect(response.status()).toBe(404);
@@ -47,9 +55,12 @@ test.describe("PUT /api/books/:id", () => {
     expect(body.error).toBe("Book not found");
   });
 
-  test("returns 400 for invalid id", async ({ request }) => {
+  test("returns 400 for invalid id", async ({ request, admin }) => {
     const response = await request.put("/api/books/abc", {
       data: validBook,
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+      },
     });
 
     expect(response.status()).toBe(400);
@@ -62,11 +73,15 @@ test.describe("PUT /api/books/:id", () => {
   test("returns 400 when required field is missing", async ({
     request,
     book,
+    admin,
   }) => {
     const { isbn, ...bookWithoutIsbn } = validBook;
 
     const response = await request.put(`/api/books/${book.id}`, {
       data: bookWithoutIsbn,
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+      },
     });
 
     expect(response.status()).toBe(400);
@@ -77,8 +92,16 @@ test.describe("PUT /api/books/:id", () => {
     expect(body.details).toContain("ISBN is required");
   });
 
-  test("returns 409 when ISBN already exists", async ({ request, book }) => {
+  test("returns 409 when ISBN already exists", async ({
+    request,
+    book,
+    admin,
+  }) => {
     let secondBookId;
+
+    const headers = {
+      Authorization: `Bearer ${admin.token}`,
+    };
 
     try {
       const secondBookResponse = await request.post("/api/books", {
@@ -87,6 +110,7 @@ test.describe("PUT /api/books/:id", () => {
           title: "Second Test Book",
           isbn: "978-0132350998",
         },
+        headers,
       });
 
       expect(secondBookResponse.status()).toBe(201);
@@ -99,6 +123,7 @@ test.describe("PUT /api/books/:id", () => {
           ...validBook,
           isbn: secondBook.isbn,
         },
+        headers,
       });
 
       expect(response.status()).toBe(409);
@@ -108,7 +133,9 @@ test.describe("PUT /api/books/:id", () => {
       expect(body.error).toBe("A book with this ISBN already exists");
     } finally {
       if (secondBookId) {
-        await request.delete(`/api/books/${secondBookId}`);
+        await request.delete(`/api/books/${secondBookId}`, {
+          headers,
+        });
       }
     }
   });

@@ -10,7 +10,7 @@ export const test = base.extend({
     const email = `test-user-${Date.now()}@example.com`;
     const password = "CorrectPassword123";
 
-    const response = await request.post("/api/auth/register", {
+    const registerResponse = await request.post("/api/auth/register", {
       data: {
         name: "Test User",
         email,
@@ -18,12 +18,25 @@ export const test = base.extend({
       },
     });
 
-    if (response.status() !== 201) {
+    if (registerResponse.status() !== 201) {
       throw new Error("Failed to create test user");
     }
 
     try {
-      await use({ email, password });
+      const loginResponse = await request.post("/api/auth/login", {
+        data: {
+          email,
+          password,
+        },
+      });
+
+      if (loginResponse.status() !== 200) {
+        throw new Error("Failed to login as test user");
+      }
+
+      const { token } = await loginResponse.json();
+
+      await use({ email, password, token });
     } finally {
       await prisma.user.deleteMany({
         where: { email },

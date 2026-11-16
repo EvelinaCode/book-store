@@ -1,10 +1,13 @@
 import { test, expect } from "../fixtures/bookFixture.js";
 
 test.describe("PATCH /api/books/:id", () => {
-  test("updates only the provided field", async ({ request, book }) => {
+  test("updates only the provided field", async ({ request, book, admin }) => {
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         price: 99.99,
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -21,12 +24,15 @@ test.describe("PATCH /api/books/:id", () => {
     expect(updatedBook.description).toBe(book.description);
   });
 
-  test("updates ISBN", async ({ request, book }) => {
+  test("updates ISBN", async ({ request, book, admin }) => {
     const newIsbn = "978-0132350997";
 
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         isbn: newIsbn,
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -39,12 +45,15 @@ test.describe("PATCH /api/books/:id", () => {
     expect(updatedBook.price).toBe(book.price);
   });
 
-  test("updates description", async ({ request, book }) => {
+  test("updates description", async ({ request, book, admin }) => {
     const newDescription = "Updated book description";
 
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         description: newDescription,
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -57,13 +66,16 @@ test.describe("PATCH /api/books/:id", () => {
     expect(updatedBook.isbn).toBe(book.isbn);
   });
 
-  test("updates multiple fields", async ({ request, book }) => {
+  test("updates multiple fields", async ({ request, book, admin }) => {
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         title: "Updated Title",
         price: 49.99,
         stock: 25,
         description: "Updated description",
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -81,10 +93,13 @@ test.describe("PATCH /api/books/:id", () => {
     expect(updatedBook.isbn).toBe(book.isbn);
   });
 
-  test("returns 400 for negative price", async ({ request, book }) => {
+  test("returns 400 for negative price", async ({ request, book, admin }) => {
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         price: -5,
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -96,9 +111,16 @@ test.describe("PATCH /api/books/:id", () => {
     expect(body.details).toContain("Price must be a non-negative number");
   });
 
-  test("returns 400 when no fields are provided", async ({ request, book }) => {
+  test("returns 400 when no fields are provided", async ({
+    request,
+    book,
+    admin,
+  }) => {
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {},
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+      },
     });
 
     expect(response.status()).toBe(400);
@@ -112,10 +134,14 @@ test.describe("PATCH /api/books/:id", () => {
   test("returns 400 when unknown field is provided", async ({
     request,
     book,
+    admin,
   }) => {
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         rating: 5,
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -127,10 +153,13 @@ test.describe("PATCH /api/books/:id", () => {
     expect(body.details).toContain('Unrecognized key: "rating"');
   });
 
-  test("returns 400 when ISBN is empty", async ({ request, book }) => {
+  test("returns 400 when ISBN is empty", async ({ request, book, admin }) => {
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         isbn: "",
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -142,10 +171,17 @@ test.describe("PATCH /api/books/:id", () => {
     expect(body.details).toContain("ISBN cannot be empty");
   });
 
-  test("returns 400 when description is empty", async ({ request, book }) => {
+  test("returns 400 when description is empty", async ({
+    request,
+    book,
+    admin,
+  }) => {
     const response = await request.patch(`/api/books/${book.id}`, {
       data: {
         description: "",
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
@@ -157,8 +193,16 @@ test.describe("PATCH /api/books/:id", () => {
     expect(body.details).toContain("Description cannot be empty");
   });
 
-  test("returns 409 when ISBN already exists", async ({ request, book }) => {
+  test("returns 409 when ISBN already exists", async ({
+    request,
+    book,
+    admin,
+  }) => {
     let secondBookId;
+
+    const headers = {
+      Authorization: `Bearer ${admin.token}`,
+    };
 
     try {
       const createResponse = await request.post("/api/books", {
@@ -168,6 +212,7 @@ test.describe("PATCH /api/books/:id", () => {
           title: "Second Test Book",
           isbn: "978-0132350998",
         },
+        headers,
       });
 
       expect(createResponse.status()).toBe(201);
@@ -179,6 +224,7 @@ test.describe("PATCH /api/books/:id", () => {
         data: {
           isbn: secondBook.isbn,
         },
+        headers,
       });
 
       expect(response.status()).toBe(409);
@@ -188,15 +234,20 @@ test.describe("PATCH /api/books/:id", () => {
       expect(body.error).toBe("A book with this ISBN already exists");
     } finally {
       if (secondBookId) {
-        await request.delete(`/api/books/${secondBookId}`);
+        await request.delete(`/api/books/${secondBookId}`, {
+          headers,
+        });
       }
     }
   });
 
-  test("returns 404 for non-existing book", async ({ request }) => {
+  test("returns 404 for non-existing book", async ({ request, admin }) => {
     const response = await request.patch("/api/books/999999", {
       data: {
         price: 50,
+      },
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
       },
     });
 
